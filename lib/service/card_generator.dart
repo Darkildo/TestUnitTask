@@ -6,32 +6,36 @@ import 'package:test_shop/models/shop_card_entity.dart';
 
 class CardGenerator {
   static final CardGenerator _instance = CardGenerator._internal();
-
-  //* TODO: короче братан, нужно обернуть генератор в ещё одну функцию которая и будет лист возвращать, а стрим также должен находится внутри сервиса чтобы можно было им управлять нормально а не из вне
-
+  Stream<ShopCardEntity>? _stream;
   List<ShopCardEntity> storage = [];
-  Stream<ShopCardEntity>? _streamGenerator;
-
+  int _count = constants.MinimalValueGeneration +
+      Random().nextInt(
+          constants.MaxValueGeneration - constants.MinimalValueGeneration);
   void _init() {
-    if (_streamGenerator == null) {
-      _streamGenerator = _generateCards();
-    }
+    _stream = _generateCards(_count);
+
+    // .listen((event) {
+    //   storage.add(event);
+    // });
   }
 
-  Future<List<ShopCardEntity>> getCards(int value) async {
-    _init();
-    return _streamGenerator!.take(value).toList();
+  void startAsyncGeneration() {
+    _stream = _generateCards(_count);
+    _stream!.listen((event) {
+      storage.add(event);
+    });
   }
 
-  Stream<ShopCardEntity> _generateCards() async* {
-    int count = constants.MinimalValueGeneration +
-        Random().nextInt(
-            constants.MaxValueGeneration - constants.MinimalValueGeneration);
-    for (int i = 0; i < count; i++) {
-      ShopCardEntity cardEntity = _generateCard(i);
-      storage.add(cardEntity);
-      yield cardEntity;
+  Stream<ShopCardEntity> _generateCards(int amount) async* {
+    print('запущена асинхронная генерация списка в колличестве: ' +
+        amount.toString() +
+        ' элементов');
+    for (int i = 0; i < _count; i++) {
+      yield await _generateCardAsync(i);
     }
+    print('асинхронная генерация списка в колличестве: ' +
+        amount.toString() +
+        ' элементов окончена');
   }
 
   ShopCardEntity _generateCard(int i) {
@@ -42,12 +46,30 @@ class CardGenerator {
         id: i);
   }
 
+  Future<ShopCardEntity> _generateCardAsync(int id) async {
+    return await Future.delayed(
+        Duration(milliseconds: 30), () => _generateCard(id));
+  }
+
+  List<ShopCardEntity> generateCardSync(int amount) {
+    print('запущена синхронная генерация списка в колличестве: ' +
+        amount.toString() +
+        ' элементов ');
+    List<ShopCardEntity> _tempList = [];
+    for (int l = 0; l < amount; l++) {
+      _tempList.add(_generateCard(l));
+    }
+    print('синхронная генерация списка в колличестве: ' +
+        amount.toString() +
+        ' элементов окончена');
+    return _tempList;
+  }
+
   factory CardGenerator() {
     return _instance;
   }
 
   CardGenerator._internal() {
-    print('create instance');
     _init();
   }
   String _getRandomString(int len) {
@@ -62,8 +84,13 @@ class CardGenerator {
         .elementAt(Random().nextInt(constants.urlList.length - 1));
   }
 
-  Future<ShopCardEntity> getRandomCard() async {
-    _init();
-    return storage.elementAt(Random().nextInt(storage.length - 1));
+  ShopCardEntity getRandomCard() {
+    print('хранилище содержит в себе: ' +
+        storage.length.toString() +
+        ' элементов');
+    int elemIndex = Random().nextInt(storage.length - 1);
+    ShopCardEntity elem = storage.elementAt(elemIndex);
+    storage.removeAt(elemIndex);
+    return elem;
   }
 }

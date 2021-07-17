@@ -9,6 +9,7 @@ import 'package:test_shop/blocs/shop_bloc/shop_state.dart';
 class ShopBloc extends Bloc<ShopEvent, ShopState> {
   ShopBloc() : super(ShopState.initial());
   CardGenerator _cardGenerator = CardGenerator();
+
   List<ShopCardEntity> _shopCardList = [];
 
   Stream<ShopState> mapEventToState(ShopEvent event) =>
@@ -16,8 +17,8 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
 
   Stream<ShopState> _initial() async* {
     yield ShopState.loadingState();
-    //_shopCardList = await _generator!.take(20).toList();
-    _shopCardList = await _cardGenerator.getCards(InitiallenghtOfList);
+    _shopCardList = _cardGenerator.generateCardSync(InitiallenghtOfList);
+    _cardGenerator.startAsyncGeneration();
     yield ShopState.loadedState(_shopCardList, generateSeed());
   }
 
@@ -27,7 +28,7 @@ class ShopBloc extends Bloc<ShopEvent, ShopState> {
   }
 
   Stream<ShopState> _addCard() async* {
-    _shopCardList.add(await CardGenerator().getRandomCard());
+    _shopCardList.add(CardGenerator().getRandomCard());
     yield ShopState.loadedState(_shopCardList, generateSeed());
   }
 
